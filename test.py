@@ -7,22 +7,7 @@ import cv2
 import json
 from datetime import datetime
 from ultralytics import YOLO
-
-
-def get_model_short_name(model_path):
-    """
-    Извлекает короткое имя модели из полного пути.
-    Пример: runs/detect/egg_detector/yolov8n_eggs-4/weights/last.pt -> yolov8n_eggs-4-last
-    """
-    norm_path = os.path.normpath(model_path)
-    parts = norm_path.split(os.sep)
-    try:
-        weights_idx = parts.index('weights')
-        model_name = parts[weights_idx - 1]
-    except ValueError:
-        model_name = os.path.basename(os.path.dirname(model_path))
-    base_name = os.path.splitext(os.path.basename(model_path))[0]
-    return f"{model_name}-{base_name}"
+from utils import get_model_short_name, create_logger
 
 
 def test_model(model_path,
@@ -54,16 +39,7 @@ def test_model(model_path,
 
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"test_{timestamp_str}_{model_short_name}"
-    run_dir = os.path.join('test_runs', run_name)
-    os.makedirs(run_dir, exist_ok=True)
-
-    log_file = os.path.join(run_dir, 'log.txt')
-
-    def log_write(msg, also_print=True):
-        with open(log_file, 'a', encoding='utf-8') as lf:
-            lf.write(msg + '\n')
-        if also_print:
-            print(msg)
+    log_write, run_dir, log_file = create_logger('test_runs', run_name)
 
     log_write("=" * 60)
     log_write(f"Запуск тестирования: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -251,7 +227,7 @@ def test_model(model_path,
 
 if __name__ == '__main__':
     metrics = test_model(
-        model_path='runs/detect/egg_detector/yolov8n_eggs-6/weights/best.pt',
+        model_path='runs/detect/egg_detector/yolov8n_eggs-7/weights/last.pt',
         dataset_path='dataset_temp',
         video_path='test_video.mp4',
         conf_threshold=0.75,
