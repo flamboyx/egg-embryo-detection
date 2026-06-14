@@ -1,6 +1,8 @@
+classifier_logs/
 dataset_temp/
 eggs_dataset/*
 !eggs_dataset/dataset.yaml
+embryo_classification_data/
 frames_test_video/
 runs/
 test_runs/
@@ -9,6 +11,7 @@ __pycache__/
 *.log
 *.cache
 temp_test_data/
+*.pkl
 *.pt
 *.mp4
 *.jpg
@@ -19,3 +22,5 @@ temp_test_data/
 .DS_Store
 venv/
 env/
+log.*
+*.json
