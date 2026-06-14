@@ -9,7 +9,7 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
 from ultralytics import YOLO
-from utils import get_model_short_name, create_logger
+from utils import get_model_short_name, create_logger, expand_bbox, extract_features_from_crop
 
 
 def extract_egg_crop(detector, image_path, conf_thresh, iou_thresh, device, expand_ratio):
@@ -26,42 +26,9 @@ def extract_egg_crop(detector, image_path, conf_thresh, iou_thresh, device, expa
     img = cv2.imread(image_path)
     if img is None:
         return None
-    h, w = img.shape[:2]
-    dx = int((x2 - x1) * expand_ratio)
-    dy = int((y2 - y1) * expand_ratio)
-    nx1 = max(0, x1 - dx)
-    nx2 = min(w, x2 + dx)
-    ny1 = max(0, y1 - dy)
-    ny2 = min(h, y2 + dy)
+    nx1, ny1, nx2, ny2 = expand_bbox(x1, y1, x2, y2, img.shape, expand_ratio)
+
     return img[ny1:ny2, nx1:nx2]
-
-
-def extract_features_from_crop(crop, median_blur, val_thresh, sat_thresh, hist_bins, hist_range):
-    """Извлекает вектор признаков из кропа яйца."""
-    if crop is None or crop.size == 0:
-        return None
-    if median_blur > 0:
-        crop = cv2.medianBlur(crop, median_blur)
-    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-    hue = hsv[:, :, 0]
-    sat = hsv[:, :, 1]
-    val = hsv[:, :, 2]
-
-    mask = (val > val_thresh) & (sat > sat_thresh)
-    total_pixels = crop.shape[0] * crop.shape[1]
-    bright_ratio = np.sum(mask) / total_pixels if total_pixels > 0 else 0.0
-
-    if np.sum(mask) == 0:
-        hist = np.zeros(hist_bins)
-    else:
-        hist = cv2.calcHist([hue], [0], mask.astype(np.uint8), [hist_bins], hist_range)
-        hist = hist / (hist.sum() + 1e-7)
-
-    mean_val = np.mean(val)
-    mean_sat = np.mean(sat)
-
-    features = np.hstack([hist.flatten(), [bright_ratio, mean_val, mean_sat]])
-    return features.astype(np.float32)
 
 
 def process_folder(detector, folder_path, label, log_write, params):
@@ -134,6 +101,7 @@ def augment_class(src_dir, target_count, class_name, data_root, augment_params):
         if current_count >= target_count:
             break
     print(f"  {class_name}: после аугментации {current_count} изображений")
+
     return aug_dir, current_count
 
 
@@ -342,10 +310,10 @@ if __name__ == '__main__':
             'conf_thresh': 0.75,
             'iou_thresh': 0.6,
             'device': 'cuda',
-            'expand_ratio': 0.1,
+            'expand_ratio': 0.0,
             'median_blur': 3,
-            'val_thresh': 45,
-            'sat_thresh': 25,
+            'val_thresh': 50,
+            'sat_thresh': 30,
             'hist_bins': 32,
             'hist_range': (0, 180)
         },
@@ -360,7 +328,7 @@ if __name__ == '__main__':
             'target_count': 500,
             'angles': [-10, -5, 5, 10],
             'scales': [0.95, 1.05],
-            'brightness': [-15, 15],
+            'brightness': [-10, 10],
             'flips': [True, False]
         }
     }

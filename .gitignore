@@ -1,9 +1,12 @@
 classifier_logs/
 dataset_temp/
 eggs_dataset/*
+embryo_test/
+embryo_test_out/
 !eggs_dataset/dataset.yaml
 embryo_classification_data/
 frames_test_video/
+inference_logs/
 runs/
 test_runs/
 __pycache__/
